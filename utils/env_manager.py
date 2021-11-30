@@ -5,6 +5,7 @@ import pdb
 import logging
 from pylogrus import PyLogrus, TextFormatter
 import ujson as json
+import tensorflow as tf
 from cloudalgo.functions import *
 import cloudalgo.functions.privacy as leap_privacy
 import cloudalgo.functions as leap_fn
@@ -18,6 +19,7 @@ import requests
 import io
 from PIL import Image
 import os
+#TODO-FELICIA Add necessary imports here
 
 # Setup logging tool
 logging.setLoggerClass(PyLogrus)
@@ -186,6 +188,50 @@ class SiteFederatedLearningEnvironment(SitePredefinedEnvironment):
         self.logger.withFields({"request-id": req_id}).info("Loaded site environment variables for federated learning.")
 
 
+
+# Environment class for loading the appropriate variables and functions
+# for running FELICIA on a site.
+class SiteFeliciaEnvironment(SitePredefinedEnvironment):
+
+    # Loads the model, optimizer and criterion into the context.
+    # Also imports the necessary libraries for federated
+    # learning.
+    #
+    # context: The context where the imports are loaded to.
+    # req: The request containing the functions to be loaded.
+    # req_id: The id of this request. Used for logging.
+    def set_env(self, context, req_body, req_id, req):
+        algo_code = req.algo_code
+        module = getattr(leap_fn, env_utils.convert_algo_code(algo_code))
+
+        globals()['tf'] = tf
+        context['tf'] = tf
+
+        # globals()["torch"] = torch
+        # context["torch"] = torch
+        # context["pd"] = pd        
+        # context["AverageMeter"] = leap_fn.fl_fn.AverageMeter
+
+        # context["torchvision"] = torchvision
+        context["requests"] = requests
+        context["io"] = io
+        context["Image"] = Image
+        context["os"] = os
+
+        hyperparams = json.loads(req_body["hyperparams"])
+        context["hyperparams"] = hyperparams
+
+        env_utils.load_fn("get_dataloader", req_body, context)
+        env_utils.load_from_fn_generator("get_model", "model", req_body, context, gen_fn_args=[hyperparams])
+        params = context["model"].parameters()
+        env_utils.load_from_fn_generator("get_optimizer", "optimizer", req_body, context, gen_fn_args=[params, hyperparams])
+        env_utils.load_from_fn_generator("get_criterion", "criterion", req_body, context, gen_fn_args=[hyperparams])
+
+        super().set_env(context, req_body, req_id, req)
+        self.logger.withFields({"request-id": req_id}).info("Loaded site environment variables for federated learning.")
+
+
+
 # Environment class for the cloud. Loads the libraries, functions,
 # and variables that run in the cloud.
 class CloudEnvironment(Environment):
@@ -313,6 +359,49 @@ class CloudFedereatedLearningEnvironment(CloudPredefinedEnvironment):
         context["io"] = io
         context["Image"] = Image
         context["os"] = os
+        
+        # pass in context as second argument so that get_model has access to context variables
+        env_utils.load_from_fn_generator("get_model", "model", req_body, context, gen_fn_args=[hyperparams])
+        params = context["model"].parameters()
+        env_utils.load_fn("get_dataloader", req_body, context)
+        env_utils.load_from_fn_generator("get_optimizer", "optimizer", req_body, context, gen_fn_args=[params, hyperparams])
+        env_utils.load_from_fn_generator("get_criterion", "criterion", req_body, context, gen_fn_args=[hyperparams])
+        self.logger.withFields({"request-id": req_id}).info("Loaded cloud environment variables for federated learning.")
+
+
+# Extends the CloudPredefinedEnvironment but also loads the
+# the parameters necessary to run the felicia algorithm
+# in the cloud.
+class CloudFeliciaEnvironment(CloudPredefinedEnvironment):
+
+    # Loads the optimizer, model, criterion and imports Pytorch
+    # into the appropriate context in the cloud.
+    #
+    # context: The context where the imports are loaded to.
+    # req: The request containing the functions to be loaded.
+    # req_id: The id of this request. Used for logging.
+    
+    #TODO-FELICIA: Change to Felicia's parameters
+    def set_env(self, context, req_body, req_id, req):
+        super().set_env(context, req_body, req_id, req)
+        # globals()["torch"] = torch
+        # context["torch"] = torch
+        # context["AverageMeter"] = leap_fn.fl_fn.AverageMeter
+        hyperparams = json.loads(req_body["hyperparams"])
+        # context["hyperparams"] = hyperparams
+
+        # context["torchvision"] = torchvision
+        context["requests"] = requests
+        context["io"] = io
+        context["Image"] = Image
+        context["os"] = os
+
+        lambdaa = req_body["lambda"]
+        privacy_params = {
+            "Lambda": lambdaa
+        }
+
+        context["privacy_params"] = privacy_params
         
         # pass in context as second argument so that get_model has access to context variables
         env_utils.load_from_fn_generator("get_model", "model", req_body, context, gen_fn_args=[hyperparams])

@@ -135,6 +135,8 @@ class SiteAlgoServicer(site_algos_pb2_grpc.SiteAlgoServicer):
                 env = env_manager.SitePrivatePredefinedEnvironment()
             elif leap_type == computation_msgs_pb2.LeapTypes.FEDERATED_LEARNING:
                 env = env_manager.SiteFederatedLearningEnvironment()
+            elif leap_type == computation_msgs_pb2.LeapTypes.FELICIA:
+                env = env_manager.SiteFeliciaEnvironment()
             env.set_env(globals(), req, request.id, request)
             log.withFields({"request-id": request.id}).info("Loaded all necessary environment")
             res = self.map_logic(request)
@@ -237,6 +239,7 @@ class SiteAlgoServicer(site_algos_pb2_grpc.SiteAlgoServicer):
             data = dataprep_fn(data)
         
         # Adding logic for private udf functions
+        #TODO-FELICIA: Do we need to add specific logic here?
         leap_type = request.leap_type
         if leap_type == computation_msgs_pb2.LeapTypes.LAPLACE_UDF:
             # Compute sensitivity: maximum difference in score function

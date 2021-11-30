@@ -66,4 +66,6 @@ def convert_algo_code(pb_enum):
         return "mean_fn"
     elif pb_enum is computation_msgs_pb2.AlgoCodes.LOG_REG:
         return "log_reg_fn"
+    elif pb_enum is computation_msgs_pb2.AlgoCodes.FELICIA_ALGO:
+        return "felicia_fn"
 

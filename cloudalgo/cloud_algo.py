@@ -143,6 +143,8 @@ class CloudAlgoServicer(cloud_algos_pb2_grpc.CloudAlgoServicer):
                 env = env_manager.CloudPrivatePredefinedEnvironment()
             elif leap_type == computation_msgs_pb2.LeapTypes.FEDERATED_LEARNING:
                 env = env_manager.CloudFedereatedLearningEnvironment()
+            elif leap_type == computation_msgs_pb2.LeapTypes.FELICIA:
+                env = env_manager.CloudFeliciaEnvironment()
             
             env.set_env(globals(), req, request.id, request)
 
@@ -241,7 +243,7 @@ class CloudAlgoServicer(cloud_algos_pb2_grpc.CloudAlgoServicer):
         for chunk in chunks:
             yield chunk
         
-
+#TODO-FELICIA: I think reading this function below will help understand how the 8 functions we need to write are related
     # Contains the logic for aggregating and performing the
     # general algorithmic portion of Leap that happens in the
     # cloud.

@@ -67,6 +67,7 @@ enum LeapTypes {
     PREDEFINED = 3;
     PRIVATE_PREDEFINED = 4;
     FEDERATED_LEARNING = 5;
+    FELICIA = 6;
 }
 
 // Algo codes
@@ -83,4 +84,5 @@ enum AlgoCodes {
     MAX_ALGO_RC = 9;
     MEAN_ALGO = 10;
     LOG_REG = 11;
+    FELICIA_ALGO = 12;
 }
